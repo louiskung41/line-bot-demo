@@ -39,6 +39,11 @@ def callback():
     return "OK"
 
 
+@app.route("/healthz", methods=["GET"])
+def healthz():
+    return "ok", 200
+
+
 # 當收到文字訊息時的處理
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
