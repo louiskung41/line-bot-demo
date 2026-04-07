@@ -1,13 +1,13 @@
 import os
 from flask import Flask, request, abort
-from dotenv import load_dotenv
+from dotenv import load_dotenv # inactivate due to Render version
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 # 載入 .env
-load_dotenv()
+load_dotenv() # inactivate due to Render version
 
 CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")
 CHANNEL_SECRET = os.getenv("CHANNEL_SECRET")
