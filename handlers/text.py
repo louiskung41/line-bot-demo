@@ -14,6 +14,31 @@ from linebot.v3.messaging import (
     PostbackAction,
 )
 
+HELP_TEXT = """🛒 購買清單使用方法
+
+➊ 新增購物項目
+請用「要買」或你設定的關鍵字開頭，例如：
+- 要買 牛奶 衛生紙
+- 要買 牛奶, 衛生紙, 垃圾袋
+
+➋ 查看清單
+輸入：
+清單
+
+➌ 完成項目
+- 傳：已買 牛奶
+- 或在清單中點 ✅
+
+➍ 清單顯示規則
+- 尚未購買
+- 今日已完成
+
+➎ 查看歷史
+輸入：
+歷史
+（最近 7 天）
+"""
+
 
 def register_text_handler(
     handler,
@@ -25,7 +50,7 @@ def register_text_handler(
     print("[DEBUG] register_text_handler CALLED")
 
     # ==================================================
-    # ✅ 文字訊息處理
+    # ✅ 文字訊息處理（所有指令集中於此）
     # ==================================================
     @handler.add(MessageEvent)
     def handle_message(event: MessageEvent):
@@ -34,6 +59,7 @@ def register_text_handler(
                 return
 
             text = event.message.text.strip()
+            text_lower = text.lower()
             user_id = event.source.user_id
 
             is_group = hasattr(event.source, "group_id")
@@ -46,6 +72,18 @@ def register_text_handler(
             )
 
             print(f"[DEBUG] received text: '{text}' from {sender_name}")
+
+            # ==================================================
+            # ✅ HELP（整合 help.py + alias）
+            # ==================================================
+            if text_lower in ("help", "?") or text == "購買清單使用方法":
+                messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text=HELP_TEXT)],
+                    )
+                )
+                return
 
             # ==================================================
             # ✅ 已購買（文字指令）
@@ -118,7 +156,7 @@ def register_text_handler(
                     return
 
             # ==================================================
-            # ✅ 查詢清單（含 checklist）
+            # ✅ 查詢清單（含 Checklist + 📖 使用說明）
             # ==================================================
             if text == "清單":
                 checklist = shopping_service.get_checklist(conversation_id)
@@ -139,9 +177,21 @@ def register_text_handler(
                             action=PostbackAction(
                                 label=f"✅ {item['item_name']}",
                                 data=f"action=complete&item_id={item['item_id']}",
+                                display_text=f"已買 {item['item_name']}",
                             )
                         )
                     )
+
+                # ➕ 使用說明 Quick Reply
+                quick_items.append(
+                    QuickReplyItem(
+                        action=PostbackAction(
+                            label="📖 使用說明",
+                            data="action=help",
+                            display_text="購買清單使用方法",
+                        )
+                    )
+                )
 
                 if checklist["today_completed"]:
                     lines.append("")
@@ -160,9 +210,7 @@ def register_text_handler(
                         messages=[
                             TextMessage(
                                 text="\n".join(lines),
-                                quick_reply=QuickReply(items=quick_items)
-                                if quick_items
-                                else None,
+                                quick_reply=QuickReply(items=quick_items),
                             )
                         ],
                     )
@@ -182,12 +230,22 @@ def register_text_handler(
             )
 
     # ==================================================
-    # ✅ Postback：Checklist ✅ 打勾完成
+    # ✅ Postback：Checklist ✅ / 📖 使用說明
     # ==================================================
     @handler.add(PostbackEvent)
     def handle_postback(event: PostbackEvent):
         try:
             data = event.postback.data
+
+            if data == "action=help":
+                messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text=HELP_TEXT)],
+                    )
+                )
+                return
+
             params = dict(
                 pair.split("=", 1)
                 for pair in data.split("&")
@@ -217,7 +275,7 @@ def register_text_handler(
 
 
 # ==================================================
-# ✅ 補回給 main.py 用的 catch-all 註冊函式
+# ✅ 提供給 main.py 使用的 catch-all
 # ==================================================
 def register_catch_all_handler(handler):
     @handler.add(Event)
