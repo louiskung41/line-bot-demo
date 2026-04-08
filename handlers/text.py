@@ -158,3 +158,13 @@ def register_text_handler(handler, api, shopping_service):
                     text="⚠️ 系統發生錯誤，請稍後再試"
                 )
             )
+
+
+# ✅ Catch‑All Handler：所有沒有被 match 的 event 都會進來
+def register_catch_all_handler(handler):
+    @handler.add(Event)
+    def catch_all(event):
+        print("========== CATCH ALL EVENT ==========")
+        print("Event type:", type(event))
+        print(event)
+        print("=====================================")

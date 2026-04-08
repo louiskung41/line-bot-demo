@@ -9,7 +9,7 @@ from shopping.service import ShoppingService
 #from shopping.mock_repository import MockShoppingRepository
 from shopping.d1_repository import D1ShoppingRepository
 
-from handlers.text import register_text_handler
+from handlers.text import (register_text_handler, register_catch_all_handler)
 from handlers.help import register_help_handler  # 等一下會建
 
 # LINE bot core
