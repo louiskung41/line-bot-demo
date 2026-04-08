@@ -1,5 +1,3 @@
-# main.py
-
 print("🔥 MAIN.PY IS EXECUTED 🔥")
 
 import os
@@ -25,6 +23,7 @@ from handlers.text import (
     register_catch_all_handler,
 )
 from handlers.user_profile import UserProfileResolver
+from handlers.help import register_help_handler   # ✅【新增 import】
 
 
 # ==========================================================
@@ -81,6 +80,7 @@ register_text_handler(
     profile_resolver,
     keyword_provider,
 )
+register_help_handler(handler, messaging_api)      # ✅【新增註冊】
 register_catch_all_handler(handler)
 
 print("✅ LINE handlers registered")

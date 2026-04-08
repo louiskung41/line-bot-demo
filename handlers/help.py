@@ -1,10 +1,7 @@
 # handlers/help.py
 
-from linebot.models import (
-    MessageEvent,
-    TextMessage,
-    TextSendMessage,
-)
+from linebot.v3.webhooks import MessageEvent, TextMessageContent
+from linebot.v3.messaging import ReplyMessageRequest, TextMessage
 
 HELP_TEXT = """🛒 購買清單使用方法
 
@@ -20,6 +17,7 @@ HELP_TEXT = """🛒 購買清單使用方法
 
 ➌ 完成項目
 - 傳：已買 牛奶
+- 或在清單中點 ✅
 
 ➍ 清單顯示規則
 - 尚未購買
@@ -31,11 +29,16 @@ HELP_TEXT = """🛒 購買清單使用方法
 （最近 7 天）
 """
 
-def register_help_handler(handler, api):
-    @handler.add(MessageEvent, message=TextMessage)
-    def show_help(event):
-        if event.message.text == "購買清單使用方法":
-            api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=HELP_TEXT)
+def register_help_handler(handler, messaging_api):
+    @handler.add(MessageEvent)
+    def show_help(event: MessageEvent):
+        if not isinstance(event.message, TextMessageContent):
+            return
+
+        if event.message.text.strip() == "購買清單使用方法":
+            messaging_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=HELP_TEXT)],
+                )
             )
