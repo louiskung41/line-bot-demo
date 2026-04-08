@@ -1,0 +1,44 @@
+GIT WORKFLOW: CLONE → EDIT → COMMIT → PUSH
+PREREQUISITES
+
+Git installed
+VS Code installed
+GitHub account
+Existing GitHub repository
+
+
+
+1. CLONE REPO FROM GITHUB
+
+  Open Terminal / PowerShell, and go to the folder where you want the project
+  Clone the repo
+
+  >> git clone https://github.com/username/line-bot-demo.git
+
+
+2. COMMIT & PUSH
+
+  stage specific file:
+  >> git add app.py
+  
+  (OR stage all changes:)
+  >> git add .
+
+  comment the commit
+  >> git commit -m "short description of changes"
+
+  >> git push
+  (If first time, follow GitHub login prompt)
+
+
+==================================
+MEMORY VERSION
+git clone
+code .
+edit
+git status
+git add
+git commit
+git push
+==================================
+END
