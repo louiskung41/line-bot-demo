@@ -16,9 +16,9 @@ def register_text_handler(
     messaging_api,
     shopping_service,
     profile_resolver,
-    keyword_provider,
+    keyword_provider,   # ✅ 關鍵字唯一來源
 ):
-    print("[DEBUG] register_text_handler CALLED (v3 + display name)")
+    print("[DEBUG] register_text_handler CALLED")
 
     @handler.add(MessageEvent)
     def handle_message(event: MessageEvent):
@@ -44,9 +44,13 @@ def register_text_handler(
             print(f"[DEBUG] received text: '{text}' from {sender_name}")
 
             # ==================================================
-            # 新增購物項目
+            # ✅ 取得「本群組可用」的買東西關鍵字（唯一來源）
             # ==================================================
             buy_keywords = keyword_provider.get_keywords(conversation_id)
+
+            # ==================================================
+            # 新增購物項目
+            # ==================================================
             if any(k in text for k in buy_keywords):
                 items = shopping_service.add_items(
                     conversation_id=conversation_id,
@@ -58,7 +62,9 @@ def register_text_handler(
                     messaging_api.reply_message(
                         ReplyMessageRequest(
                             reply_token=event.reply_token,
-                            messages=[TextMessage(text="⚠️ 沒有解析到任何購物項目")]
+                            messages=[
+                                TextMessage(text="⚠️ 沒有解析到任何購物項目")
+                            ],
                         )
                     )
                     return
@@ -82,7 +88,7 @@ def register_text_handler(
                 messaging_api.reply_message(
                     ReplyMessageRequest(
                         reply_token=event.reply_token,
-                        messages=[TextMessage(text="\n".join(lines))]
+                        messages=[TextMessage(text="\n".join(lines))],
                     )
                 )
                 return
@@ -121,61 +127,7 @@ def register_text_handler(
                 messaging_api.reply_message(
                     ReplyMessageRequest(
                         reply_token=event.reply_token,
-                        messages=[TextMessage(text="\n".join(lines))]
-                    )
-                )
-                return
-
-            # ==================================================
-            # 完成項目
-            # ==================================================
-            if text.startswith("已買"):
-                item_name = text.replace("已買", "").strip()
-
-                shopping_service.complete_item(
-                    conversation_id=conversation_id,
-                    item_name=item_name,
-                    completed_by=user_id,
-                )
-
-                messaging_api.reply_message(
-                    ReplyMessageRequest(
-                        reply_token=event.reply_token,
-                        messages=[TextMessage(text=f"✅ {sender_name} 已完成：{item_name}")]
-                    )
-                )
-                return
-
-            # ==================================================
-            # 歷史
-            # ==================================================
-            if "歷史" in text:
-                history = shopping_service.get_history(conversation_id)
-
-                if not history:
-                    messaging_api.reply_message(
-                        ReplyMessageRequest(
-                            reply_token=event.reply_token,
-                            messages=[TextMessage(text="📦 最近 7 天沒有購物紀錄")]
-                        )
-                    )
-                    return
-
-                lines = ["📦 最近 7 天購物紀錄："]
-                for item in history:
-                    completer = profile_resolver.get_display_name(
-                        user_id=item["completed_by"],
-                        conversation_id=conversation_id,
-                        is_group=is_group,
-                    )
-                    lines.append(
-                        f"- {item['item_name']}（完成者：{completer}）"
-                    )
-
-                messaging_api.reply_message(
-                    ReplyMessageRequest(
-                        reply_token=event.reply_token,
-                        messages=[TextMessage(text="\n".join(lines))]
+                        messages=[TextMessage(text="\n".join(lines))],
                     )
                 )
                 return
@@ -184,17 +136,18 @@ def register_text_handler(
             print("========== HANDLER ERROR ==========")
             print(e)
             print("===================================")
+
             messaging_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text="⚠️ 系統錯誤，請稍後再試")]
+                    messages=[TextMessage(text="⚠️ 系統錯誤，請稍後再試")],
                 )
             )
 
 
-# ==========================================================
-# Catch‑All Handler（保險用）
-# ==========================================================
+# ==================================================
+# Catch‑all（保險，不影響主流程）
+# ==================================================
 def register_catch_all_handler(handler):
     @handler.add(Event)
     def catch_all(event):
