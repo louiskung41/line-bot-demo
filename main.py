@@ -1,5 +1,5 @@
 # main.py
-raise RuntimeError("🔥 THIS main.py IS EXECUTED 🔥")
+print("🔥 MAIN.PY IS EXECUTED 🔥")
 
 import os
 from linebot_core.bot import LineBotCore
