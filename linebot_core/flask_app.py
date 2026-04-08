@@ -1,13 +1,26 @@
-from flask import Flask, request
+# linebot_core/flask_app.py
 
-def create_app(bot):
+from flask import Flask, request, abort
+from linebot.v3.exceptions import InvalidSignatureError
+
+
+def create_app(handler):
     app = Flask(__name__)
 
     @app.route("/callback", methods=["POST"])
     def callback():
-        signature = request.headers.get("X-Line-Signature", "")
         body = request.get_data(as_text=True)
-        bot.handle(body, signature)
+        signature = request.headers.get("X-Line-Signature", "")
+
+        print("=== CALLBACK HIT ===")
+        print(body[:200])
+
+        try:
+            # ✅ v3 正確寫法
+            handler.handle(body, signature)
+        except InvalidSignatureError:
+            abort(400)
+
         return "OK"
 
     @app.route("/healthz")
