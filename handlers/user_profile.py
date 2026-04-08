@@ -1,13 +1,15 @@
 # handlers/user_profile.py
 
-from typing import Dict, Optional
+from typing import Dict
 from linebot.v3.messaging import MessagingApi
-from linebot.v3.exceptions import LineBotApiError
 
 
 class UserProfileResolver:
     """
-    取得 LINE 使用者顯示名稱（含簡單快取）
+    取得 LINE 使用者顯示名稱（含簡單 cache）
+    支援：
+    - 私聊（get_profile）
+    - 群組（get_group_member_profile）
     """
 
     def __init__(self, messaging_api: MessagingApi):
@@ -20,7 +22,7 @@ class UserProfileResolver:
         conversation_id: str,
         is_group: bool,
     ) -> str:
-        # ✅ 快取優先
+        # ✅ 先從 cache 拿
         if user_id in self._cache:
             return self._cache[user_id]
 
@@ -37,6 +39,7 @@ class UserProfileResolver:
             self._cache[user_id] = display_name
             return display_name
 
-        except LineBotApiError:
-            # 取不到就退回 userId（保底）
+        except Exception as e:
+            # ✅ 任何錯誤都 fallback 成 user_id（保證 bot 不會炸）
+            print("[WARN] Failed to get display name:", e)
             return user_id
