@@ -4,6 +4,7 @@ import requests
 from datetime import datetime
 from typing import List, Dict
 
+
 class D1ShoppingRepository:
     def __init__(self, base_url: str, api_key: str | None = None):
         self.base_url = base_url.rstrip("/")
@@ -11,6 +12,9 @@ class D1ShoppingRepository:
         if api_key:
             self.headers["X-API-Key"] = api_key
 
+    # =========================
+    # 新增購物項目
+    # =========================
     def add_item(
         self,
         conversation_id: str,
@@ -28,8 +32,11 @@ class D1ShoppingRepository:
             },
             headers=self.headers,
             timeout=5,
-        )
+        ).raise_for_status()
 
+    # =========================
+    # 取得尚未購買項目（✅ 包含 item_id，Checklist 用）
+    # =========================
     def list_pending_items(self, conversation_id: str) -> List[Dict]:
         resp = requests.get(
             f"{self.base_url}/items/pending",
@@ -37,8 +44,32 @@ class D1ShoppingRepository:
             headers=self.headers,
             timeout=5,
         )
+        resp.raise_for_status()
         return resp.json()
 
+    # =========================
+    # ✅ Checklist 專用：用 item_id 完成購物項目
+    # =========================
+    def complete_item_by_id(
+        self,
+        item_id: str,
+        completed_by: str,
+        completed_at: datetime,
+    ) -> None:
+        requests.post(
+            f"{self.base_url}/items/complete",
+            json={
+                "item_id": item_id,
+                "completed_by": completed_by,
+                "completed_at": completed_at.isoformat(),
+            },
+            headers=self.headers,
+            timeout=5,
+        ).raise_for_status()
+
+    # =========================
+    # 舊功能：用名稱完成（文字指令）
+    # =========================
     def complete_item(
         self,
         conversation_id: str,
@@ -56,8 +87,11 @@ class D1ShoppingRepository:
             },
             headers=self.headers,
             timeout=5,
-        )
+        ).raise_for_status()
 
+    # =========================
+    # 今日已完成項目
+    # =========================
     def list_today_completed(self, conversation_id: str) -> List[Dict]:
         resp = requests.get(
             f"{self.base_url}/items/today",
@@ -65,9 +99,17 @@ class D1ShoppingRepository:
             headers=self.headers,
             timeout=5,
         )
+        resp.raise_for_status()
         return resp.json()
 
-    def list_recent_history(self, conversation_id: str, days: int = 7) -> List[Dict]:
+    # =========================
+    # 歷史紀錄
+    # =========================
+    def list_recent_history(
+        self,
+        conversation_id: str,
+        days: int = 7,
+    ) -> List[Dict]:
         resp = requests.get(
             f"{self.base_url}/items/history",
             params={
@@ -77,4 +119,5 @@ class D1ShoppingRepository:
             headers=self.headers,
             timeout=5,
         )
+        resp.raise_for_status()
         return resp.json()
