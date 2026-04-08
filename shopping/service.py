@@ -11,7 +11,9 @@ class ShoppingService:
     def __init__(self, repository: ShoppingRepository):
         self.repository = repository
 
-    # 新增購物項目
+    # ================================
+    # 新增購物項目（文字指令）
+    # ================================
     def add_items(
         self,
         conversation_id: str,
@@ -31,8 +33,13 @@ class ShoppingService:
 
         return items
 
-    # 查詢目前清單
+    # ================================
+    # 查詢目前清單（Checklist 用）
+    # ================================
     def get_checklist(self, conversation_id: str) -> Dict[str, List[Dict]]:
+        """
+        pending items 必須包含 item_id，供 UX checklist 使用
+        """
         pending = self.repository.list_pending_items(conversation_id)
         today_completed = self.repository.list_today_completed(conversation_id)
 
@@ -41,7 +48,23 @@ class ShoppingService:
             "today_completed": today_completed,
         }
 
-    # 完成購物項目
+    # ================================
+    # ✅ Checklist 專用：用 item_id 完成
+    # ================================
+    def complete_item_by_id(
+        self,
+        item_id: str,
+        completed_by: str,
+    ) -> None:
+        self.repository.complete_item_by_id(
+            item_id=item_id,
+            completed_by=completed_by,
+            completed_at=datetime.utcnow(),
+        )
+
+    # ================================
+    # 舊功能：用名稱完成（文字指令）
+    # ================================
     def complete_item(
         self,
         conversation_id: str,
@@ -55,7 +78,9 @@ class ShoppingService:
             completed_at=datetime.utcnow(),
         )
 
+    # ================================
     # 查詢歷史
+    # ================================
     def get_history(
         self,
         conversation_id: str,
