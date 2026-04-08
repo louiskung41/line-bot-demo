@@ -5,6 +5,7 @@ from flask import abort
 class LineBotCore:
     def __init__(self, access_token, channel_secret):
         self.api = LineBotApi(access_token)
+        print("[DEBUG] handle_webhook called")
         self.handler = WebhookHandler(channel_secret)
 
     def handle(self, body, signature):

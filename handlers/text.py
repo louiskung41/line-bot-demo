@@ -8,6 +8,7 @@ from linebot.models import (
 
 
 def register_text_handler(handler, api, shopping_service):
+    print("[DEBUG] register_text_handler CALLED")
     @handler.add(MessageEvent, message=TextMessage)
     def handle_text(event):
         try:
