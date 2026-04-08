@@ -4,7 +4,7 @@ import re
 from typing import List
 
 
-BUY_KEYWORDS = ["要買buy"]
+# BUY_KEYWORDS = ["要買"]
 SEPARATORS_PATTERN = r"[ ,，、]+"
 
 

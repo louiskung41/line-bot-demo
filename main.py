@@ -63,8 +63,12 @@ print("✅ ShoppingService initialized")
 # 3️⃣ User Display Name Resolver
 # ==========================================================
 profile_resolver = UserProfileResolver(messaging_api)
-
 print("✅ UserProfileResolver initialized")
+
+from handlers.buy_keyword_provider import BuyKeywordProvider
+keyword_provider = BuyKeywordProvider(
+    api_base_url=os.environ["D1_API_BASE_URL"]
+)
 
 
 # ==========================================================
@@ -75,6 +79,7 @@ register_text_handler(
     messaging_api,
     shopping_service,
     profile_resolver,
+    keyword_provider,
 )
 register_catch_all_handler(handler)
 

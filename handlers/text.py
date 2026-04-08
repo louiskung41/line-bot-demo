@@ -16,6 +16,7 @@ def register_text_handler(
     messaging_api,
     shopping_service,
     profile_resolver,
+    keyword_provider,
 ):
     print("[DEBUG] register_text_handler CALLED (v3 + display name)")
 
@@ -45,7 +46,8 @@ def register_text_handler(
             # ==================================================
             # 新增購物項目
             # ==================================================
-            if "要買" in text or "buy" in text.lower():
+            buy_keywords = keyword_provider.get_keywords(conversation_id)
+            if any(k in text for k in buy_keywords):
                 items = shopping_service.add_items(
                     conversation_id=conversation_id,
                     user_id=user_id,
