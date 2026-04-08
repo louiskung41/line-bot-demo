@@ -48,7 +48,7 @@ def register_text_handler(
             print(f"[DEBUG] received text: '{text}' from {sender_name}")
 
             # ==================================================
-            # ✅ 1️⃣ 已購買（文字指令）
+            # ✅ 已購買（文字指令）
             # ==================================================
             complete_keywords = keyword_provider.get_keywords(
                 conversation_id, "complete_keywords"
@@ -85,7 +85,7 @@ def register_text_handler(
                     return
 
             # ==================================================
-            # ✅ 2️⃣ 新增購物（要買）
+            # ✅ 新增購物（要買）
             # ==================================================
             buy_keywords = keyword_provider.get_keywords(
                 conversation_id, "buy_keywords"
@@ -118,7 +118,7 @@ def register_text_handler(
                     return
 
             # ==================================================
-            # ✅ 3️⃣ 查詢清單（含 ✅ checklist）
+            # ✅ 查詢清單（含 checklist）
             # ==================================================
             if text == "清單":
                 checklist = shopping_service.get_checklist(conversation_id)
@@ -134,7 +134,6 @@ def register_text_handler(
                     )
                     lines.append(f"- {item['item_name']}（{creator}）")
 
-                    # ✅ Checklist ✅（用 item_id）
                     quick_items.append(
                         QuickReplyItem(
                             action=PostbackAction(
@@ -183,7 +182,7 @@ def register_text_handler(
             )
 
     # ==================================================
-    # ✅ Checklist 打勾（PostbackEvent）
+    # ✅ Postback：Checklist ✅ 打勾完成
     # ==================================================
     @handler.add(PostbackEvent)
     def handle_postback(event: PostbackEvent):
@@ -216,9 +215,11 @@ def register_text_handler(
             print(e)
             print("===================================")
 
-    # ==================================================
-    # Catch‑all
-    # ==================================================
+
+# ==================================================
+# ✅ 補回給 main.py 用的 catch-all 註冊函式
+# ==================================================
+def register_catch_all_handler(handler):
     @handler.add(Event)
     def catch_all(event):
         print("========== CATCH ALL EVENT ==========")
