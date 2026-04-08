@@ -44,18 +44,46 @@ def register_text_handler(
             print(f"[DEBUG] received text: '{text}' from {sender_name}")
 
             # ==================================================
-            # ✅ 取得「本群組可用」的買東西關鍵字（唯一來源）
+            # ✅ 關鍵字判斷與切除（重點修正在這裡）
             # ==================================================
             buy_keywords = keyword_provider.get_keywords(conversation_id)
+
+            matched_keyword = None
+            matched_index = None
+
+            # 找出「最前面出現」的關鍵字
+            for k in buy_keywords:
+                idx = text.find(k)
+                if idx != -1:
+                    if matched_index is None or idx < matched_index:
+                        matched_keyword = k
+                        matched_index = idx
 
             # ==================================================
             # 新增購物項目
             # ==================================================
-            if any(k in text for k in buy_keywords):
+            if matched_keyword is not None:
+                # ✅ 切掉關鍵字本身
+                content = text[
+                    matched_index + len(matched_keyword):
+                ].strip()
+
+                if not content:
+                    messaging_api.reply_message(
+                        ReplyMessageRequest(
+                            reply_token=event.reply_token,
+                            messages=[
+                                TextMessage(text="⚠️ 請輸入要購買的項目")
+                            ],
+                        )
+                    )
+                    return
+
+                # ✅ 只把「內容」交給 service / parser
                 items = shopping_service.add_items(
                     conversation_id=conversation_id,
                     user_id=user_id,
-                    text=text,
+                    text=content,
                 )
 
                 if not items:
@@ -83,7 +111,9 @@ def register_text_handler(
                         conversation_id=conversation_id,
                         is_group=is_group,
                     )
-                    lines.append(f"- {item['item_name']}（{creator}）")
+                    lines.append(
+                        f"- {item['item_name']}（{creator}）"
+                    )
 
                 messaging_api.reply_message(
                     ReplyMessageRequest(
@@ -96,7 +126,7 @@ def register_text_handler(
             # ==================================================
             # 查詢清單
             # ==================================================
-            if "清單" in text:
+            if text == "清單":
                 checklist = shopping_service.get_checklist(conversation_id)
 
                 lines = ["🛒 尚未購買："]
@@ -107,7 +137,9 @@ def register_text_handler(
                             conversation_id=conversation_id,
                             is_group=is_group,
                         )
-                        lines.append(f"- {item['item_name']}（{creator}）")
+                        lines.append(
+                            f"- {item['item_name']}（{creator}）"
+                        )
                 else:
                     lines.append("（目前沒有項目）")
 
