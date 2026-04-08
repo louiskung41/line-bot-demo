@@ -1,5 +1,6 @@
 # handlers/text.py
 
+from datetime import datetime
 from linebot.v3.webhooks import (
     MessageEvent,
     TextMessageContent,
@@ -40,6 +41,14 @@ HELP_TEXT = """🛒 購買清單使用方法
 """
 
 
+def _fmt_date(date_str: str) -> str:
+    """將 ISO datetime 字串轉成 mm/dd"""
+    try:
+        return datetime.fromisoformat(date_str).strftime("%m/%d")
+    except Exception:
+        return "--/--"
+
+
 def register_text_handler(
     handler,
     messaging_api,
@@ -50,7 +59,7 @@ def register_text_handler(
     print("[DEBUG] register_text_handler CALLED")
 
     # ==================================================
-    # ✅ 文字訊息處理（所有指令集中於此）
+    # ✅ 文字訊息處理
     # ==================================================
     @handler.add(MessageEvent)
     def handle_message(event: MessageEvent):
@@ -64,14 +73,6 @@ def register_text_handler(
 
             is_group = hasattr(event.source, "group_id")
             conversation_id = event.source.group_id if is_group else user_id
-
-            sender_name = profile_resolver.get_display_name(
-                user_id=user_id,
-                conversation_id=conversation_id,
-                is_group=is_group,
-            )
-
-            print(f"[DEBUG] received text: '{text}' from {sender_name}")
 
             # ==================================================
             # ✅ HELP（help / ? / 完整文字）
@@ -91,7 +92,6 @@ def register_text_handler(
             complete_keywords = keyword_provider.get_keywords(
                 conversation_id, "complete_keywords"
             )
-
             for k in complete_keywords:
                 if text.startswith(k):
                     item_name = text[len(k):].strip()
@@ -110,12 +110,19 @@ def register_text_handler(
                         completed_by=user_id,
                     )
 
+                    user_name = profile_resolver.get_display_name(
+                        user_id=user_id,
+                        conversation_id=conversation_id,
+                        is_group=is_group,
+                    )
+                    today = datetime.now().strftime("%m/%d")
+
                     messaging_api.reply_message(
                         ReplyMessageRequest(
                             reply_token=event.reply_token,
                             messages=[
                                 TextMessage(
-                                    text=f"✅ {item_name} 已標記為已購買（{sender_name}）"
+                                    text=f"✅ {item_name}（{user_name}, {today}）已標記為已購買"
                                 )
                             ],
                         )
@@ -128,7 +135,6 @@ def register_text_handler(
             buy_keywords = keyword_provider.get_keywords(
                 conversation_id, "buy_keywords"
             )
-
             for k in buy_keywords:
                 if text.startswith(k):
                     content = text[len(k):].strip()
@@ -156,7 +162,7 @@ def register_text_handler(
                     return
 
             # ==================================================
-            # ✅ 查詢清單（Checklist + 📖 使用說明）
+            # ✅ 清單（尚未購買 / 今日已完成）
             # ==================================================
             if text == "清單":
                 checklist = shopping_service.get_checklist(conversation_id)
@@ -165,12 +171,16 @@ def register_text_handler(
                 quick_items = []
 
                 for item in checklist["pending"]:
-                    creator = profile_resolver.get_display_name(
+                    user_name = profile_resolver.get_display_name(
                         user_id=item["created_by"],
                         conversation_id=conversation_id,
                         is_group=is_group,
                     )
-                    lines.append(f"- {item['item_name']}（{creator}）")
+                    date = _fmt_date(item.get("created_at"))
+
+                    lines.append(
+                        f"- {item['item_name']}（{user_name}, {date}）"
+                    )
 
                     quick_items.append(
                         QuickReplyItem(
@@ -182,7 +192,7 @@ def register_text_handler(
                         )
                     )
 
-                # ➕ 使用說明 Quick Reply
+                # 使用說明
                 quick_items.append(
                     QuickReplyItem(
                         action=PostbackAction(
@@ -197,12 +207,15 @@ def register_text_handler(
                     lines.append("")
                     lines.append("✅ 今日已完成：")
                     for item in checklist["today_completed"]:
-                        completer = profile_resolver.get_display_name(
+                        user_name = profile_resolver.get_display_name(
                             user_id=item["completed_by"],
                             conversation_id=conversation_id,
                             is_group=is_group,
                         )
-                        lines.append(f"- {item['item_name']}（完成者：{completer}）")
+                        date = _fmt_date(item.get("completed_at"))
+                        lines.append(
+                            f"- {item['item_name']}（{user_name}, {date}）"
+                        )
 
                 messaging_api.reply_message(
                     ReplyMessageRequest(
@@ -218,7 +231,7 @@ def register_text_handler(
                 return
 
             # ==================================================
-            # ✅ 查看歷史（最近 7 天）
+            # ✅ 歷史
             # ==================================================
             if text == "歷史":
                 history = shopping_service.get_history(conversation_id)
@@ -234,13 +247,14 @@ def register_text_handler(
 
                 lines = ["📦 最近 7 天購物紀錄："]
                 for item in history:
-                    completer = profile_resolver.get_display_name(
+                    user_name = profile_resolver.get_display_name(
                         user_id=item["completed_by"],
                         conversation_id=conversation_id,
                         is_group=is_group,
                     )
+                    date = _fmt_date(item.get("completed_at"))
                     lines.append(
-                        f"- {item['item_name']}（完成者：{completer}）"
+                        f"- {item['item_name']}（{user_name}, {date}）"
                     )
 
                 messaging_api.reply_message(
@@ -255,7 +269,6 @@ def register_text_handler(
             print("========== HANDLER ERROR ==========")
             print(e)
             print("===================================")
-
             messaging_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
@@ -264,7 +277,7 @@ def register_text_handler(
             )
 
     # ==================================================
-    # ✅ Postback：Checklist ✅ / 📖 使用說明
+    # ✅ Postback
     # ==================================================
     @handler.add(PostbackEvent)
     def handle_postback(event: PostbackEvent):
@@ -288,11 +301,9 @@ def register_text_handler(
 
             if params.get("action") == "complete":
                 item_id = params.get("item_id")
-                user_id = event.source.user_id
-
                 shopping_service.complete_item_by_id(
                     item_id=item_id,
-                    completed_by=user_id,
+                    completed_by=event.source.user_id,
                 )
 
                 messaging_api.reply_message(
@@ -308,9 +319,6 @@ def register_text_handler(
             print("===================================")
 
 
-# ==================================================
-# ✅ 提供給 main.py 使用的 catch-all
-# ==================================================
 def register_catch_all_handler(handler):
     @handler.add(Event)
     def catch_all(event):
