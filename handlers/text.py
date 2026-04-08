@@ -74,7 +74,7 @@ def register_text_handler(
             print(f"[DEBUG] received text: '{text}' from {sender_name}")
 
             # ==================================================
-            # ✅ HELP（整合 help.py + alias）
+            # ✅ HELP（help / ? / 完整文字）
             # ==================================================
             if text_lower in ("help", "?") or text == "購買清單使用方法":
                 messaging_api.reply_message(
@@ -156,7 +156,7 @@ def register_text_handler(
                     return
 
             # ==================================================
-            # ✅ 查詢清單（含 Checklist + 📖 使用說明）
+            # ✅ 查詢清單（Checklist + 📖 使用說明）
             # ==================================================
             if text == "清單":
                 checklist = shopping_service.get_checklist(conversation_id)
@@ -213,6 +213,40 @@ def register_text_handler(
                                 quick_reply=QuickReply(items=quick_items),
                             )
                         ],
+                    )
+                )
+                return
+
+            # ==================================================
+            # ✅ 查看歷史（最近 7 天）
+            # ==================================================
+            if text == "歷史":
+                history = shopping_service.get_history(conversation_id)
+
+                if not history:
+                    messaging_api.reply_message(
+                        ReplyMessageRequest(
+                            reply_token=event.reply_token,
+                            messages=[TextMessage(text="📦 最近 7 天沒有購物紀錄")],
+                        )
+                    )
+                    return
+
+                lines = ["📦 最近 7 天購物紀錄："]
+                for item in history:
+                    completer = profile_resolver.get_display_name(
+                        user_id=item["completed_by"],
+                        conversation_id=conversation_id,
+                        is_group=is_group,
+                    )
+                    lines.append(
+                        f"- {item['item_name']}（完成者：{completer}）"
+                    )
+
+                messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text="\n".join(lines))],
                     )
                 )
                 return
